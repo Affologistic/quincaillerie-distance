@@ -31,45 +31,69 @@
 </head>
 <body>
     <div class="container">
-        <h1>🛠️ Espace de Vente - Quincaillerie</h1>
+        <h1>🛠 Mini-Caisse Enregistreuse</h1>
         <div class="grid">
             <div class="card">
-                <h2>🛒 Panier du Client</h2>
+                <h2>🛒 Faire une Vente</h2>
                 <form id="formVente" onsubmit="event.preventDefault(); ajouterAuPanier();">
                     <label><strong>Nom de l'article :</strong></label>
                     <input type="text" id="nomArticle" placeholder="Ex: Sac de Ciment Cimtogo 50kg" required>
-                    <label><strong>Quantité :</strong></label>
+                    <label><strong>Quantite :</strong></label>
                     <input type="number" id="qteArticle" min="1" value="1" required>
-                    <button type="submit" class="btn" style="background-color: #6c757d;">➕ Ajouter au Panier</button>
+                    <button type="submit" class="btn" style="background-color: #6c757d;">Ajouter au Panier</button>
                 </form>
                 <table class="panier-table">
-                    <thead><tr><th>Article</th><th>Quantité</th><th>Action</th></tr></thead>
+                    <thead><tr><th>Article</th><th>Quantite</th><th>Action</th></tr></thead>
                     <tbody id="corpsPanier"></tbody>
                 </table>
-                <button type="button" class="btn" style="background-color: #007bff;" onclick="encaisserPanier()">💰 Encaisser et Générer le Reçu</button>
+                <button type="button" class="btn" onclick="encaisserPanier()">Valider et Imprimer</button>
             </div>
             <div class="card">
-                <h2>🧾 Aperçu du Reçu Global</h2>
-                <div id="zoneTicket"><p style="color: #666; text-align: center;">Ajoutez des articles et encaissez.</p></div>
-                <button id="btnImprimer" class="btn" style="background-color: #28a745; display: none;" onclick="imprimerRecu()">🖨️ Imprimer</button>
+                <h2>🧾 Recu Client</h2>
+                <div id="zoneTicket"><p style="color: #666; text-align: center;">Aucun article.</p></div>
+                <button id="btnImprimer" class="btn" style="background-color: #28a745; display: none;" onclick="imprimerRecu()">Imprimer</button>
             </div>
         </div>
+
         <div class="section-patron">
             <h1>📊 Tableau de Bord Directeur (Suivi à Distance)</h1>
             <div class="stats-grid">
                 <div class="stat-box bg-ca"><div>Chiffre d'Affaires</div><div id="statCA">0.00 FCFA</div></div>
-                <div class="stat-box bg-benef"><div>Bénéfice Net Réalisé</div><div id="statBenef">0.00 FCFA</div></div>
-                <div class="stat-box bg-stock"><div>Valeur du Stock Restant</div><div id="statStock">0.00 FCFA</div></div>
+                <div class="stat-box bg-benef"><div>Benefice Net</div><div id="statBenef">0.00 FCFA</div></div>
+                <div class="stat-box bg-stock"><div>Valeur du Stock</div><div id="statStock">0.00 FCFA</div></div>
             </div>
-            <div class="card">
-                <h2>📦 État des Stocks & Marges</h2>
+            <div class="card" style="margin-bottom: 20px;">
+                <h2>📦 Etat des Stocks Actuels</h2>
                 <table>
-                    <thead><tr><th>Nom de l'article</th><th>Total Reçu</th><th>Articles Vendus</th><th>Stock Restant</th><th>Statut</th></tr></thead>
+                    <thead><tr><th>Nom de l'article</th><th>Total Recu</th><th>Vendus</th><th>Reste en rayon</th><th>Statut</th></tr></thead>
                     <tbody id="tableauStocks"></tbody>
                 </table>
             </div>
+
+            <!-- ZONE DE MODIFICATION POUR LE PATRON -->
+            <div class="grid">
+                <div class="card" style="border-top: 4px solid #28a745;">
+                    <h2>🆕 Creer un nouvel article</h2>
+                    <form id="formNew" onsubmit="event.preventDefault(); creerArticle();">
+                        <input type="text" id="newNom" placeholder="Nom du produit" required>
+                        <input type="number" id="newQte" placeholder="Quantite de depart" required>
+                        <input type="number" id="newAchat" placeholder="Prix d'achat unitaire" required>
+                        <input type="number" id="newVente" placeholder="Prix de vente unitaire" required>
+                        <button type="submit" class="btn" style="background-color: #28a745;">Ajouter au Catalogue</button>
+                    </form>
+                </div>
+                <div class="card" style="border-top: 4px solid #17a2b8;">
+                    <h2>➕ Arrivage (Ajouter du stock)</h2>
+                    <form id="formStock" onsubmit="event.preventDefault(); ajouterStock();">
+                        <input type="text" id="stockNom" placeholder="Nom exact du produit" required>
+                        <input type="number" id="stockQte" placeholder="Quantite recue" required>
+                        <button type="submit" class="btn" style="background-color: #17a2b8;">Valider l'Arrivage</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
+
     <script>
         let panierActuel = [];
         document.addEventListener("DOMContentLoaded", chargerDonnesPatron);
@@ -83,7 +107,7 @@
                 document.getElementById('statStock').innerText = data.finance.valeur_stock_total.toFixed(2) + " FCFA";
                 let htmlTableau = "";
                 data.inventaire.forEach(art => {
-                    let badgeStatut = art.restant > 0 ? '<span class="badge badge-success">🟢 En Stock</span>' : '<span class="badge badge-danger">🔴 Rupture</span>';
+                    let badgeStatut = art.restant > 0 ? '<span class="badge badge-success">En Stock</span>' : '<span class="badge badge-danger">Rupture</span>';
                     htmlTableau += `<tr><td><strong>${art.nom}</strong></td><td>${art.total_ajoutes}</td><td>${art.ventes}</td><td>${art.restant}</td><td>${badgeStatut}</td></tr>`;
                 });
                 document.getElementById('tableauStocks').innerHTML = htmlTableau;
@@ -103,7 +127,7 @@
         function mettreAjourAffichagePanier() {
             let html = "";
             panierActuel.forEach((item, index) => {
-                html += `<tr><td>${item.nom}</td><td>${item.quantite}</td><td><button onclick="retirerDuPanier(${index})" style="color:red; background:none; border:none;">❌</button></td></tr>`;
+                html += `<tr><td>${item.nom}</td><td>${item.quantite}</td><td><button onclick="retirerDuPanier(${index})" style="color:red; background:none; border:none; cursor:pointer;">❌</button></td></tr>`;
             });
             document.getElementById('corpsPanier').innerHTML = html;
         }
@@ -113,7 +137,7 @@
             mettreAjourAffichagePanier();
         }
 
-        function  encaisserPanier() {
+        function encaisserPanier() {
             if(panierActuel.length === 0) return alert("Le panier est vide !");
             fetch('/vendre_panier', {
                 method: 'POST',
@@ -131,10 +155,17 @@
                     chargerDonnesPatron();
                 }
             })
-            .catch(err => alert("Erreur de communication avec le serveur"));
+            .catch(err => alert("Erreur serveur"));
         }
 
-        function imprimerRecu() { window.print(); }
-    </script>
-</body>
-</html>
+        function creerArticle() {
+            let formData = new FormData();
+            formData.append('nom', document.getElementById('newNom').value);
+            formData.append('quantite', document.getElementById('newQte').value);
+            formData.append('prix_achat', document.getElementById('newAchat').value);
+            formData.append('prix_vente', document.getElementById('newVente').value);
+            fetch('/api/creer_article', { method: 'POST', body: formData }).then(() => { alert("Effectue !"); document.getElementById('formNew').reset(); chargerDonnesPatron(); });
+        }
+
+        function ajouterStock() {
+            let formData = new FormData();

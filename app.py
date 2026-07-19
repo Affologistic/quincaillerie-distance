@@ -9,11 +9,10 @@ def connexion_db():
     conn.row_factory = sqlite3.Row
     return conn
 
-# Suppression forcée et recréation propre de la base de données
+# Initialisation de la base de données
 with connexion_db() as conn:
-    conn.execute("DROP TABLE IF EXISTS quincaillerie")
     conn.execute("""
-    CREATE TABLE quincaillerie (
+    CREATE TABLE IF NOT EXISTS quincaillerie (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nom TEXT UNIQUE NOT NULL,
         quantite_initiale INTEGER DEFAULT 0,
@@ -23,9 +22,8 @@ with connexion_db() as conn:
         prix_vente REAL DEFAULT 0.0
     )
     """)
-    conn.execute("DROP TABLE IF EXISTS ventes_historique")
     conn.execute("""
-    CREATE TABLE ventes_historique (
+    CREATE TABLE IF NOT EXISTS ventes_historique (
         id_facture TEXT NOT NULL,
         date_vente TEXT NOT NULL,
         article_nom TEXT NOT NULL,
@@ -35,7 +33,7 @@ with connexion_db() as conn:
     )
     """)
     
-    # VOTRE LISTE OFFICIELLE DU TOGO - CHARGÉE DE FORCE
+    # CHARGEMENT FORCÉ DES ARTICLES DU TOGO
     articles_togo = [
         ("Sac de Ciment Cimtogo 50kg", 100, 3850.0, 4100.0),
         ("Fer a beton 12mm (Barre)", 150, 4000.0, 4500.0),
@@ -48,10 +46,12 @@ with connexion_db() as conn:
         ("Brouette de chantier", 10, 18000.0, 22500.0),
         ("Pelle ronde avec manche", 25, 2500.0, 3500.0)
     ]
-    
-    for art in articles_togo:
-        conn.execute("INSERT INTO quincaillerie (nom, quantite_initiale, prix_achat, prix_vente) VALUES (?, ?, ?, ?)", art)
-    conn.commit()
+    try:
+        for art in articles_togo:
+            conn.execute("INSERT OR IGNORE INTO quincaillerie (nom, quantite_initiale, prix_achat, prix_vente) VALUES (?, ?, ?, ?)", art)
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass
 
 @app.route('/')
 def tableau_de_bord():
@@ -88,6 +88,45 @@ def api_donnees_patron():
         "finance": {"total_ca": total_ca, "total_benefice": total_benefice, "valeur_stock_total": valeur_stock_total},
         "inventaire": liste_inventaire
     })
+
+@app.route('/api/creer_article', methods=['POST'])
+def api_creer_article():
+    """Déclare un tout nouvel article dans la base de données."""
+    nom = request.form.get('nom').strip()
+    quantite = int(request.form.get('quantite'))
+    prix_achat = float(request.form.get('prix_achat'))
+    prix_vente = float(request.form.get('prix_vente'))
+    
+    conn = connexion_db()
+    try:
+        conn.execute("""
+            INSERT INTO quincaillerie (nom, quantite_initiale, prix_achat, prix_vente)
+            VALUES (?, ?, ?, ?)
+        """, (nom, quantite, prix_achat, prix_vente))
+        conn.commit()
+        return jsonify({"statut": "Succes"})
+    except sqlite3.IntegrityError:
+        return jsonify({"erreur": "Existe deja"}), 400
+    finally:
+        conn.close()
+
+@app.route('/api/ajouter_stock', methods=['POST'])
+def api_ajouter_stock():
+    """Ajoute du stock à un produit existant lors d'un arrivage."""
+    nom = request.form.get('nom').strip()
+    quantite = int(request.form.get('quantite'))
+    
+    conn = connexion_db()
+    article = conn.execute("SELECT * FROM quincaillerie WHERE nom = ?", (nom,)).fetchone()
+    
+    if not article:
+        conn.close()
+        return jsonify({"erreur": "Introuvable"}), 400
+        
+    conn.execute("UPDATE quincaillerie SET quantite_ajoutee = quantite_ajoutee + ? WHERE nom = ?", (quantite, nom))
+    conn.commit()
+    conn.close()
+    return jsonify({"statut": "Succes"})
 
 @app.route('/vendre_panier', methods=['POST'])
 def vendre_panier():

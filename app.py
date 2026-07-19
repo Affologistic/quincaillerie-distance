@@ -9,6 +9,7 @@ def connexion_db():
     conn.row_factory = sqlite3.Row
     return conn
 
+# Création automatique de la structure de gestion
 with connexion_db() as conn:
     conn.execute("""
     CREATE TABLE IF NOT EXISTS quincaillerie (
@@ -31,6 +32,31 @@ with connexion_db() as conn:
         total_paye REAL NOT NULL
     )
     """)
+    
+    # CATALOGUE OFFICIEL DES ARTICLES LES PLUS VENDUS AU TOGO
+    # Format : (Nom de l'article, Stock de départ, Prix d'achat, Prix de vente)
+    articles_togo = [
+        ("Sac de Ciment Cimtogo 50kg", 100, 3850.0, 4100.0),
+        ("Fer a beton 12mm (Barre)", 150, 4000.0, 4500.0),
+        ("Fer a beton 10mm (Barre)", 200, 3100.0, 3600.0),
+        ("Fer a beton 8mm (Barre)", 250, 2000.0, 2400.0),
+        ("Rouleau Fil de ligature", 30, 9000.0, 11000.0),
+        ("Tole ondulee (Paquet)", 15, 45000.0, 52000.0),
+        ("Pot Peinture Blanche 20L", 20, 14000.0, 18500.0),
+        ("Paquet de Pointes 80mm", 40, 4500.0, 5500.0),
+        ("Brouette de chantier", 10, 18000.0, 22500.0),
+        ("Pelle ronde avec manche", 25, 2500.0, 3500.0)
+    ]
+    
+    try:
+        for art in articles_togo:
+            conn.execute("""
+                INSERT OR IGNORE INTO quincaillerie (nom, quantite_initiale, prix_achat, prix_vente) 
+                VALUES (?, ?, ?, ?)
+            """, art)
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass
 
 @app.route('/')
 def tableau_de_bord():
@@ -68,43 +94,6 @@ def api_donnees_patron():
         "inventaire": liste_inventaire
     })
 
-@app.route('/api/creer_article', methods=['POST'])
-def api_creer_article():
-    nom = request.form.get('nom').strip()
-    quantite = int(request.form.get('quantite'))
-    prix_achat = float(request.form.get('prix_achat'))
-    prix_vente = float(request.form.get('prix_vente'))
-    
-    conn = connexion_db()
-    try:
-        conn.execute("""
-            INSERT INTO quincaillerie (nom, quantite_initiale, prix_achat, prix_vente)
-            VALUES (?, ?, ?, ?)
-        """, (nom, quantite, prix_achat, prix_vente))
-        conn.commit()
-        return jsonify({"statut": f"Article '{nom}' cree avec succes !"})
-    except sqlite3.IntegrityError:
-        return jsonify({"erreur": "Cet article existe deja dans votre catalogue."}), 400
-    finally:
-        conn.close()
-
-@app.route('/api/ajouter_stock', methods=['POST'])
-def api_ajouter_stock():
-    nom = request.form.get('nom').strip()
-    quantite = int(request.form.get('quantite'))
-    
-    conn = connexion_db()
-    article = conn.execute("SELECT * FROM quincaillerie WHERE nom = ?", (nom,)).fetchone()
-    
-    if not article:
-        conn.close()
-        return jsonify({"erreur": f"L'article '{nom}' n'existe pas."}), 400
-        
-    conn.execute("UPDATE quincaillerie SET quantite_ajoutee = quantite_ajoutee + ? WHERE nom = ?", (quantite, nom))
-    conn.commit()
-    conn.close()
-    return jsonify({"statut": f"{quantite} unite(s) ajoutee(s) pour '{nom}' !"})
-
 @app.route('/vendre_panier', methods=['POST'])
 def vendre_panier():
     donnees = request.get_json()
@@ -140,25 +129,25 @@ def vendre_panier():
             VALUES (?, ?, ?, ?, ?, ?)
         """, (id_facture, date_actuelle, nom, qte_demandee, prix_unitaire, total_ligne))
         
-        lignes_recu += f"{nom:<20} x{qte_demandee:<3} {total_ligne:>10.2f} FCFA\n"
+        lignes_recu += f"{nom:<25} x{qte_demandee:<3} {total_ligne:>10.2f} FCFA\n"
         
     conn.commit()
     conn.close()
     
     recu_texte = f"""
-    ==========================================
+    ===========================================
               QUINCAILLERIE DU CENTRE     
-    ==========================================
+    ===========================================
     Facture N° : #{id_facture}
     Date       : {date_actuelle}
-    ------------------------------------------
-    Article              Qte       Total
-    ------------------------------------------
-{lignes_recu}------------------------------------------
+    -------------------------------------------
+    Article               Qté       Total
+    -------------------------------------------
+{lignes_recu}-------------------------------------------
     TOTAL FACTURE :       {total_general:.2f} FCFA
-    ==========================================
+    ===========================================
     Merci de votre confiance !
-    ==========================================
+    ===========================================
     """
     return jsonify({"statut": "Vente validee", "recu_impression": recu_texte})
 

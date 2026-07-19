@@ -9,10 +9,11 @@ def connexion_db():
     conn.row_factory = sqlite3.Row
     return conn
 
-# Création automatique de la structure de gestion
+# Suppression forcée et recréation propre de la base de données
 with connexion_db() as conn:
+    conn.execute("DROP TABLE IF EXISTS quincaillerie")
     conn.execute("""
-    CREATE TABLE IF NOT EXISTS quincaillerie (
+    CREATE TABLE quincaillerie (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nom TEXT UNIQUE NOT NULL,
         quantite_initiale INTEGER DEFAULT 0,
@@ -22,8 +23,9 @@ with connexion_db() as conn:
         prix_vente REAL DEFAULT 0.0
     )
     """)
+    conn.execute("DROP TABLE IF EXISTS ventes_historique")
     conn.execute("""
-    CREATE TABLE IF NOT EXISTS ventes_historique (
+    CREATE TABLE ventes_historique (
         id_facture TEXT NOT NULL,
         date_vente TEXT NOT NULL,
         article_nom TEXT NOT NULL,
@@ -33,8 +35,7 @@ with connexion_db() as conn:
     )
     """)
     
-    # CATALOGUE OFFICIEL DES ARTICLES LES PLUS VENDUS AU TOGO
-    # Format : (Nom de l'article, Stock de départ, Prix d'achat, Prix de vente)
+    # VOTRE LISTE OFFICIELLE DU TOGO - CHARGÉE DE FORCE
     articles_togo = [
         ("Sac de Ciment Cimtogo 50kg", 100, 3850.0, 4100.0),
         ("Fer a beton 12mm (Barre)", 150, 4000.0, 4500.0),
@@ -48,15 +49,9 @@ with connexion_db() as conn:
         ("Pelle ronde avec manche", 25, 2500.0, 3500.0)
     ]
     
-    try:
-        for art in articles_togo:
-            conn.execute("""
-                INSERT OR IGNORE INTO quincaillerie (nom, quantite_initiale, prix_achat, prix_vente) 
-                VALUES (?, ?, ?, ?)
-            """, art)
-        conn.commit()
-    except sqlite3.OperationalError:
-        pass
+    for art in articles_togo:
+        conn.execute("INSERT INTO quincaillerie (nom, quantite_initiale, prix_achat, prix_vente) VALUES (?, ?, ?, ?)", art)
+    conn.commit()
 
 @app.route('/')
 def tableau_de_bord():
@@ -98,8 +93,8 @@ def api_donnees_patron():
 def vendre_panier():
     donnees = request.get_json()
     panier = donnees.get('panier', [])
-    
     conn = connexion_db()
+    
     for item in panier:
         nom = item['nom']
         qte_demandee = int(item['quantite'])
@@ -124,31 +119,13 @@ def vendre_panier():
         total_general += total_ligne
         
         conn.execute("UPDATE quincaillerie SET quantite_vendue = quantite_vendue + ? WHERE nom = ?", (qte_demandee, nom))
-        conn.execute("""
-            INSERT INTO ventes_historique (id_facture, date_vente, article_nom, quantite_vendue, prix_unitaire, total_paye)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (id_facture, date_actuelle, nom, qte_demandee, prix_unitaire, total_ligne))
-        
+        conn.execute("INSERT INTO ventes_historique (id_facture, date_vente, article_nom, quantite_vendue, prix_unitaire, total_paye) VALUES (?, ?, ?, ?, ?, ?)", (id_facture, date_actuelle, nom, qte_demandee, prix_unitaire, total_ligne))
         lignes_recu += f"{nom:<25} x{qte_demandee:<3} {total_ligne:>10.2f} FCFA\n"
         
     conn.commit()
     conn.close()
     
-    recu_texte = f"""
-    ===========================================
-              QUINCAILLERIE DU CENTRE     
-    ===========================================
-    Facture N° : #{id_facture}
-    Date       : {date_actuelle}
-    -------------------------------------------
-    Article               Qté       Total
-    -------------------------------------------
-{lignes_recu}-------------------------------------------
-    TOTAL FACTURE :       {total_general:.2f} FCFA
-    ===========================================
-    Merci de votre confiance !
-    ===========================================
-    """
+    recu_texte = f"===========================================\n          QUINCAILLERIE DU CENTRE     \n===========================================\nFacture N° : #{id_facture}\nDate       : {date_actuelle}\n-------------------------------------------\nArticle               Qté       Total\n-------------------------------------------\n{lignes_recu}-------------------------------------------\nTOTAL FACTURE :       {total_general:.2f} FCFA\n===========================================\nMerci de votre confiance !\n==========================================="
     return jsonify({"statut": "Vente validee", "recu_impression": recu_texte})
 
 if __name__ == '__main__':

@@ -9,7 +9,6 @@ def connexion_db():
     conn.row_factory = sqlite3.Row
     return conn
 
-# Préparation automatique de la base de données de la quincaillerie
 with connexion_db() as conn:
     conn.execute("""
     CREATE TABLE IF NOT EXISTS quincaillerie (
@@ -35,12 +34,10 @@ with connexion_db() as conn:
 
 @app.route('/')
 def tableau_de_bord():
-    """Affiche la page d'accueil visuelle (index.html)"""
     return render_template('index.html')
 
-@app.route('/api//api/donnees_patron_patron')
-def api_donnies_patron():
-    """Calcule et renvoie toutes les statistiques financières et de stocks pour le patron."""
+@app.route('/api/donnees_patron')
+def api_donnees_patron():
     conn = connexion_db()
     articles = conn.execute("SELECT * FROM quincaillerie").fetchall()
     conn.close()
@@ -63,24 +60,16 @@ def api_donnies_patron():
         valeur_stock_total += val_stock_art
         
         liste_inventaire.append({
-            'nom': art['nom'], 
-            'total_ajoutes': total_recu, 
-            'ventes': art['quantite_vendue'], 
-            'restant': restant
+            'nom': art['nom'], 'total_ajoutes': total_recu, 'ventes': art['quantite_vendue'], 'restant': restant
         })
 
     return jsonify({
-        "finance": {
-            "total_ca": total_ca, 
-            "total_benefice": total_benefice, 
-            "valeur_stock_total": valeur_stock_total
-        },
+        "finance": {"total_ca": total_ca, "total_benefice": total_benefice, "valeur_stock_total": valeur_stock_total},
         "inventaire": liste_inventaire
     })
 
 @app.route('/api/creer_article', methods=['POST'])
 def api_creer_article():
-    """Déclare un tout nouvel article dans le catalogue de la quincaillerie."""
     nom = request.form.get('nom').strip()
     quantite = int(request.form.get('quantite'))
     prix_achat = float(request.form.get('prix_achat'))
@@ -93,15 +82,14 @@ def api_creer_article():
             VALUES (?, ?, ?, ?)
         """, (nom, quantite, prix_achat, prix_vente))
         conn.commit()
-        return jsonify({"statut": f"Article '{nom}' créé avec succès !"})
+        return jsonify({"statut": f"Article '{nom}' cree avec succes !"})
     except sqlite3.IntegrityError:
-        return jsonify({"erreur": "Cet article existe déjà dans votre catalogue."}), 400
+        return jsonify({"erreur": "Cet article existe deja dans votre catalogue."}), 400
     finally:
         conn.close()
 
 @app.route('/api/ajouter_stock', methods=['POST'])
 def api_ajouter_stock():
-    """Ajoute du stock à un produit existant lors d'un arrivage au magasin."""
     nom = request.form.get('nom').strip()
     quantite = int(request.form.get('quantite'))
     
@@ -110,22 +98,19 @@ def api_ajouter_stock():
     
     if not article:
         conn.close()
-        return jsonify({"erreur": f"L'article '{nom}' n'existe pas. Créez-le d'abord à gauche."}), 400
+        return jsonify({"erreur": f"L'article '{nom}' n'existe pas."}), 400
         
     conn.execute("UPDATE quincaillerie SET quantite_ajoutee = quantite_ajoutee + ? WHERE nom = ?", (quantite, nom))
     conn.commit()
     conn.close()
-    return jsonify({"statut": f"{quantite} unité(s) ajoutée(s) pour '{nom}' !"})
+    return jsonify({"statut": f"{quantite} unite(s) ajoutee(s) pour '{nom}' !"})
 
 @app.route('/vendre_panier', methods=['POST'])
 def vendre_panier():
-    """Gère une liste d'articles achetés par un client, déduis les stocks et génère la facture."""
     donnees = request.get_json()
     panier = donnees.get('panier', [])
     
     conn = connexion_db()
-    
-    # 1. Vérification des stocks avant de valider la vente
     for item in panier:
         nom = item['nom']
         qte_demandee = int(item['quantite'])
@@ -134,14 +119,13 @@ def vendre_panier():
             return jsonify({"erreur": f"L'article '{nom}' n'existe pas."}), 400
         stock_actuel = art['quantite_initiale'] + art['quantite_ajoutee'] - art['quantite_vendue']
         if stock_actuel < qte_demandee:
-            return jsonify({"erreur": f"Stock insuffisant pour '{nom}'. Restant : {stock_actuel}"}), 400
+            return jsonify({"erreur": f"Stock insuffisant pour '{nom}'."}), 400
 
     id_facture = datetime.now().strftime("%Y%m%d%H%M%S")
     date_actuelle = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     total_general = 0
     lignes_recu = ""
     
-    # 2. Validation de la vente et enregistrement dans l'historique
     for item in panier:
         nom = item['nom']
         qte_demandee = int(item['quantite'])
@@ -161,7 +145,6 @@ def vendre_panier():
     conn.commit()
     conn.close()
     
-    # Construction du ticket de caisse
     recu_texte = f"""
     ==========================================
               QUINCAILLERIE DU CENTRE     
@@ -169,7 +152,7 @@ def vendre_panier():
     Facture N° : #{id_facture}
     Date       : {date_actuelle}
     ------------------------------------------
-    Article              Qté       Total
+    Article              Qte       Total
     ------------------------------------------
 {lignes_recu}------------------------------------------
     TOTAL FACTURE :       {total_general:.2f} FCFA
@@ -177,7 +160,7 @@ def vendre_panier():
     Merci de votre confiance !
     ==========================================
     """
-    return jsonify({"statut": "Vente validée", "recu_impression": recu_texte})
+    return jsonify({"statut": "Vente validee", "recu_impression": recu_texte})
 
 if __name__ == '__main__':
     app.run(debug=True)

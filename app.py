@@ -38,7 +38,7 @@ def tableau_de_bord():
     """Affiche la page d'accueil visuelle (index.html)"""
     return render_template('index.html')
 
-@app.route('/api/donnies_patron')
+@app.route('/api//api/donnees_patron_patron')
 def api_donnies_patron():
     """Calcule et renvoie toutes les statistiques financières et de stocks pour le patron."""
     conn = connexion_db()

@@ -138,7 +138,7 @@
         document.addEventListener("DOMContentLoaded", chargerDonnesPatron);
 
         function chargerDonnesPatron() {
-            fetch('/api/donnies_patron')
+            fetch('/api/donnees_patron')
             .then(response => response.json())
             .then(data => {
                 document.getElementById('statCA').innerText = data.finance.total_ca.toFixed(2) + " FCFA";

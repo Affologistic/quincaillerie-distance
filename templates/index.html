@@ -14,12 +14,14 @@
         .btn:hover { background-color: #0056b3; }
         input { width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
         pre { background: #333; color: #fff; padding: 15px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap; font-family: monospace; }
+        
         .section-patron { margin-top: 40px; border-top: 3px double #007bff; padding-top: 20px; }
         .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
         .stat-box { padding: 15px; border-radius: 5px; text-align: center; color: white; font-weight: bold; }
         .bg-ca { background-color: #17a2b8; }
         .bg-benef { background-color: #28a745; }
         .bg-stock { background-color: #6c757d; }
+        
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background-color: #f8f9fa; font-weight: bold; }
@@ -32,28 +34,31 @@
 <body>
     <div class="container">
         <h1>🛠️ Espace de Vente - Quincaillerie</h1>
+        
         <div class="grid">
+            <!-- Côté Gauche : Panier -->
             <div class="card">
                 <h2>🛒 Panier du Client</h2>
                 <form id="formVente" onsubmit="event.preventDefault(); ajouterAuPanier();">
                     <label><strong>Nom de l'article :</strong></label>
                     <input type="text" id="nomArticle" placeholder="Ex: Sac de Ciment 50kg" required>
+                    
                     <label><strong>Quantité :</strong></label>
                     <input type="number" id="qteArticle" min="1" value="1" required>
+                    
                     <button type="submit" class="btn" style="background-color: #6c757d;">➕ Ajouter au Panier</button>
                 </form>
+
                 <table class="panier-table">
                     <thead>
-                        <tr>
-                            <th>Article</th>
-                            <th>Quantité</th>
-                            <th>Action</th>
-                        </tr>
+                        <tr><th>Article</th><th>Quantité</th><th>Action</th></tr>
                     </thead>
                     <tbody id="corpsPanier"></tbody>
                 </table>
                 <button type="button" class="btn" style="background-color: #007bff;" onclick="encaisserPanier()">💰 Encaisser et Générer le Reçu</button>
             </div>
+
+            <!-- Côté Droit : Reçu final -->
             <div class="card">
                 <h2>🧾 Aperçu du Reçu Global</h2>
                 <div id="zoneTicket">
@@ -62,14 +67,18 @@
                 <button id="btnImprimer" class="btn" style="background-color: #28a745; display: none;" onclick="imprimerRecu()">🖨️ Lancer l'impression physique</button>
             </div>
         </div>
+
+        <!-- ================= ESPACE PATRON ================= -->
         <div class="section-patron">
             <h1>📊 Tableau de Bord Directeur (Suivi à Distance)</h1>
+            
             <div class="stats-grid">
                 <div class="stat-box bg-ca"><div>Chiffre d'Affaires</div><div id="statCA">0.00 FCFA</div></div>
                 <div class="stat-box bg-benef"><div>Bénéfice Net Réalisé</div><div id="statBenef">0.00 FCFA</div></div>
                 <div class="stat-box bg-stock"><div>Valeur du Stock Restant</div><div id="statStock">0.00 FCFA</div></div>
             </div>
-            <div class="card">
+
+            <div class="card" style="margin-bottom: 30px;">
                 <h2>📦 État des Stocks & Marges</h2>
                 <table>
                     <thead>
@@ -84,13 +93,50 @@
                     <tbody id="tableauStocks"></tbody>
                 </table>
             </div>
+
+            <!-- CONFIGURATION TECHNIQUE DE LA BOUTIQUE -->
+            <div class="grid">
+                <!-- Formulaire 1 : Créer un tout nouvel article -->
+                <div class="card" style="border-top: 4px solid #28a745;">
+                    <h2>🆕 Déclarer un NOUVEL Article</h2>
+                    <form id="formNouvelArticle" onsubmit="event.preventDefault(); creerNouvelArticle();">
+                        <label>Nom de l'article :</label>
+                        <input type="text" id="newNom" placeholder="Ex: Fer à béton 12mm" required>
+                        
+                        <label>Quantité Initiale en magasin :</label>
+                        <input type="number" id="newQte" min="0" placeholder="Ex: 200" required>
+                        
+                        <label>Prix d'Achat Unitaire (FCFA) :</label>
+                        <input type="number" id="newPrixAchat" min="0" placeholder="Ex: 4000" required>
+                        
+                        <label>Prix de Vente Unitaire (FCFA) :</label>
+                        <input type="number" id="newPrixVente" min="0" placeholder="Ex: 5000" required>
+                        
+                        <button type="submit" class="btn" style="background-color: #28a745;">✨ Ajouter au Catalogue</button>
+                    </form>
+                </div>
+
+                <!-- Formulaire 2 : Ajouter du stock à un article existant -->
+                <div class="card" style="border-top: 4px solid #17a2b8;">
+                    <h2>➕ Arrivage de Marchandise (Ajout Stock)</h2>
+                    <form id="formAjoutStock" onsubmit="event.preventDefault(); approvisionnerStock();">
+                        <label>Nom exact de l'article à ravitailler :</label>
+                        <input type="text" id="approNom" placeholder="Ex: Sac de Ciment 50kg" required>
+                        
+                        <label>Quantité ajoutée au magasin :</label>
+                        <input type="number" id="approQte" min="1" placeholder="Ex: 50" required>
+                        
+                        <button type="submit" class="btn" style="background-color: #17a2b8;">➕ Valider l'Arrivage</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
+
     <script>
         let panierActuel = [];
         document.addEventListener("DOMContentLoaded", chargerDonnesPatron);
 
-        // Cette fonction demande les données à distance au serveur
         function chargerDonnesPatron() {
             fetch('/api/donnies_patron')
             .then(response => response.json())
@@ -130,30 +176,7 @@
             mettreAjourAffichagePanier();
         }
 
-        // Envoi sécurisé des données au serveur sans l'espace problématique
         function encaisserPanier() {
             if(panierActuel.length === 0) return alert("Le panier est vide !");
             fetch('/vendre_panier', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ panier: panierActuel })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if(data.erreur) {
-                    alert("❌ Erreur : " + data.erreur);
-                } else {
-                    document.getElementById('zoneTicket').innerHTML = "<pre>" + data.recu_impression + "</pre>";
-                    document.getElementById('btnImprimer').style.display = "block";
-                    panierActuel = [];
-                    mettreAjourAffichagePanier();
-                    chargerDonnesPatron();
-                }
-            })
-            .catch(err => alert("Erreur de connexion au serveur"));
-        }
-
-        function imprimerRecu() { window.print(); }
-    </script>
-</body>
-</html>
+            

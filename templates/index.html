@@ -46,7 +46,7 @@ text-align:center;
 🏪 Gestion Quincaillerie
 </a>
 
-<button class="btn btn-light">
+<button class="btn btn-light" onclick="window.location.href='login.html'">
 Admin
 </button>
 
@@ -171,13 +171,33 @@ FCFA
 
 <button class="btn btn-success">
 
+<button class="btn btn-success" onclick="imprimerFacture()">
 Imprimer Facture
+</button>function imprimerFacture(){
+    window.print();
+}
+
+function annulerVente(){
+
+    if(confirm("Voulez-vous vraiment annuler cette vente ?")){
+
+        document.getElementById("liste").innerHTML="";
+        document.getElementById("total").innerHTML="0";
+        document.getElementById("venteJour").innerHTML="0 FCFA";
+
+        total=0;
+
+    }
+
+}
 
 </button>
 
 <button class="btn btn-danger">
 
+<button class="btn btn-danger" onclick="annulerVente()">
 Annuler Vente
+</button>
 
 </button>
 

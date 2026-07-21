@@ -169,3 +169,38 @@
 
         function ajouterStock() {
             let formData = new FormData();
+            function ajouterStock() {
+    let formData = new FormData();
+    formData.append("nom", document.getElementById("stockNom").value);
+    formData.append("quantite", document.getElementById("stockQte").value);
+
+    fetch("/api/ajouter_stock", {
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.erreur) {
+            alert(data.erreur);
+        } else {
+            alert("Stock ajouté avec succès !");
+            document.getElementById("formStock").reset();
+            chargerDonnesPatron();
+        }
+    })
+    .catch(() => alert("Erreur lors de l'ajout du stock."));
+}
+
+function imprimerRecu() {
+    const contenu = document.getElementById("zoneTicket").innerHTML;
+    const fenetre = window.open("", "_blank");
+    fenetre.document.write("<html><head><title>Reçu</title></head><body>");
+    fenetre.document.write(contenu);
+    fenetre.document.write("</body></html>");
+    fenetre.document.close();
+    fenetre.print();
+}
+
+</script>
+</body>
+</html>

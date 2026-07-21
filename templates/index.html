@@ -1,239 +1,143 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestion Quincaillerie</title>
-
-<!-- Bootstrap 5 pour le design -->
-<link href="https://jsdelivr.net" rel="stylesheet">
-
-<style>
-body {
-    background: #f4f6f9;
-}
-
-.navbar {
-    background: #0d6efd;
-}
-
-.card {
-    box-shadow: 0px 3px 10px rgba(0,0,0,.2);
-}
-
-.table {
-    font-size: 14px;
-}
-
-footer {
-    margin-top: 30px;
-    padding: 15px;
-    background: #0d6efd;
-    color: white;
-    text-align: center;
-}
-
-/* 🖨️ STYLE SPECIAL POUR L'IMPRESSION SUR PAPIER */
-@media print {
-    /* Masquer tout le site sauf la facture */
-    body *, nav, footer, hr, h3, .card, .row, .btn, table:not(.table-bordered) {
-        display: none !important;
-    }
-    /* Afficher uniquement le tableau de facture et son total */
-    .table-bordered, .table-bordered *, #total, h2.text-end {
-        display: revert !important;
-    }
-    body {
-        background: white;
-    }
-}
-</style>
-
-</head>
-
-<body>
-
-<nav class="navbar navbar-dark">
+<nav class="navbar navbar-dark mb-4">
 <div class="container-fluid">
-    <a class="navbar-brand">🏪 Gestion Quincaillerie</a>
-    <button class="btn btn-light">Admin</button>
+    <a class="navbar-brand fw-bold">🏪 Gestion Quincaillerie</a>
+    <button class="btn btn-light btn-sm fw-bold">Admin</button>
 </div>
 </nav>
 
-<div class="container mt-4">
+<div class="container-fluid px-4">
 
-<!-- Blocs Statistiques -->
-<div class="row">
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h5>Articles</h5>
-                <h2 id="nbArticles">150</h2>
+    <!-- 📊 BLOCS STATISTIQUES COMPACTS -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 bg-white p-2">
+                <div class="d-flex align-items-center justify-content-between p-2">
+                    <div>
+                        <h6 class="text-muted mb-1">Articles</h6>
+                        <h3 class="mb-0 fw-bold" id="nbArticles">150</h3>
+                    </div>
+                    <span class="fs-3">📦</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 bg-success text-white p-2">
+                <div class="d-flex align-items-center justify-content-between p-2">
+                    <div>
+                        <h6 class="text-white-50 mb-1">Ventes du jour</h6>
+                        <h3 class="mb-0 fw-bold" id="venteJour">0 FCFA</h3>
+                    </div>
+                    <span class="fs-3">💰</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 bg-warning p-2">
+                <div class="d-flex align-items-center justify-content-between p-2">
+                    <div>
+                        <h6 class="text-dark-50 mb-1">Clients</h6>
+                        <h3 class="mb-0 fw-bold">20</h3>
+                    </div>
+                    <span class="fs-3">👥</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 bg-danger text-white p-2">
+                <div class="d-flex align-items-center justify-content-between p-2">
+                    <div>
+                        <h6 class="text-white-50 mb-1">Stock faible</h6>
+                        <h3 class="mb-0 fw-bold">4</h3>
+                    </div>
+                    <span class="fs-3">⚠️</span>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="col-md-3">
-        <div class="card text-center bg-success text-white">
-            <div class="card-body">
-                <h5>Ventes du jour</h5>
-                <h2 id="venteJour">0 FCFA</h2>
+    <!-- 📐 STRUCTURE PRINCIPALE EN 2 COLONNES -->
+    <div class="row g-4">
+        
+        <!-- COLONNE GAUCHE : ENCAISSEMENT ET FACTURE (Plus large) -->
+        <div class="col-lg-8">
+            
+            <!-- Carte Saisie Nouvelle Vente -->
+            <div class="card border-0 p-4 mb-4">
+                <h5 class="card-title fw-bold mb-3 text-primary">🛒 Nouvelle Vente</h5>
+                <div class="row g-2">
+                    <div class="col-md-5">
+                        <input id="produit" class="form-control form-control-lg fs-6" placeholder="Nom du produit">
+                    </div>
+                    <div class="col-md-3">
+                        <input id="prix" type="number" class="form-control form-control-lg fs-6" placeholder="Prix (FCFA)">
+                    </div>
+                    <div class="col-md-2">
+                        <input id="qte" type="number" class="form-control form-control-lg fs-6" placeholder="Qté">
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary btn-lg fs-6 w-100 fw-bold" onclick="ajouter()">Ajouter</button>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <div class="col-md-3">
-        <div class="card text-center bg-warning">
-            <div class="card-body">
-                <h5>Clients</h5>
-                <h2>20</h2>
-            </div>
-        </div>
-    </div>
+            <!-- Carte Facture en cours -->
+            <div class="card border-0 p-4">
+                <h5 class="card-title fw-bold mb-3 text-secondary">📄 Facture</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Produit</th>
+                                <th class="text-end">Prix Unit.</th>
+                                <th class="text-center">Quantité</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="liste">
+                            <!-- Les lignes s'ajouteront ici dynamiquement -->
+                        </tbody>
+                    </table>
+                </div>
 
-    <div class="col-md-3">
-        <div class="card text-center bg-danger text-white">
-            <div class="card-body">
-                <h5>Stock faible</h5>
-                <h2>4</h2>
+                <!-- Zone du Total global -->
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                    <div>
+                        <button class="btn btn-success fw-bold px-4" onclick="imprimerFacture()">🖨️ Imprimer</button>
+                        <button class="btn btn-outline-danger fw-bold ms-2" onclick="annulerVente()">Annuler</button>
+                    </div>
+                    <h3 class="mb-0 fw-bold text-dark">
+                        TOTAL : <span id="total" class="text-primary">0</span> FCFA
+                    </h3>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- COLONNE DROITE : VISUALISATION DES STOCKS (Plus étroite) -->
+        <div class="col-lg-4">
+            <div class="card border-0 p-4" style="max-height: 520px; overflow-y: auto;">
+                <h5 class="card-title fw-bold mb-3 text-dark">📦 État du Stock</h5>
+                <table class="table table-sm table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Article</th>
+                            <th class="text-center">Dispo</th>
+                            <th class="text-end">Prix</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Marteau</td><td class="text-center"><span class="badge bg-success-subtle text-success">50</span></td><td class="text-end text-muted">3 000</td></tr>
+                        <tr><td>Clous</td><td class="text-center"><span class="badge bg-success-subtle text-success">500</span></td><td class="text-end text-muted">50</td></tr>
+                        <tr><td>Peinture</td><td class="text-center"><span class="badge bg-warning-subtle text-warning">25</span></td><td class="text-end text-muted">15 000</td></tr>
+                        <tr><td>Ciment</td><td class="text-center"><span class="badge bg-success-subtle text-success">100</span></td><td class="text-end text-muted">7 000</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
+
     </div>
 </div>
 
-<hr>
-
-<!-- Section Saisie Nouvelle Vente -->
-<h3>Nouvelle Vente</h3>
-<div class="row">
-    <div class="col-md-4">
-        <input id="produit" class="form-control" placeholder="Nom du produit">
-    </div>
-    <div class="col-md-2">
-        <input id="prix" type="number" class="form-control" placeholder="Prix">
-    </div>
-    <div class="col-md-2">
-        <input id="qte" type="number" class="form-control" placeholder="Qté">
-    </div>
-    <div class="col-md-2">
-        <button class="btn btn-primary w-100" onclick="ajouter()">Ajouter</button>
-    </div>
-</div>
-
-<hr>
-
-<!-- Section Facturation -->
-<h3>Facture</h3>
-<table class="table table-bordered">
-    <thead class="table-dark">
-        <tr>
-            <th>Produit</th>
-            <th>Prix</th>
-            <th>Qté</th>
-            <th>Total</th>
-        </tr>
-    </thead>
-    <tbody id="liste">
-        <!-- Les lignes de vente apparaîtront ici -->
-    </tbody>
-</table>
-
-<h2 class="text-end">
-    TOTAL : <span id="total">0</span> FCFA
-</h2>
-
-<!-- Boutons d'action réparés et connectés -->
-<button class="btn btn-success" onclick="imprimerFacture()">Imprimer Facture</button>
-<button class="btn btn-danger" onclick="annulerVente()">Annuler Vente</button>
-
-<hr>
-
-<!-- Section Stock disponible -->
-<h3>Stock</h3>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Produit</th>
-            <th>Stock</th>
-            <th>Prix</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr><td>Marteau</td><td>50</td><td>3000</td></tr>
-        <tr><td>Clous</td><td>500</td><td>50</td></tr>
-        <tr><td>Peinture</td><td>25</td><td>15000</td></tr>
-        <tr><td>Ciment</td><td>100</td><td>7000</td></tr>
-    </tbody>
-</table>
-
-</div>
-
-<footer>
+<footer class="mt-5">
     Logiciel de Gestion de Quincaillerie ©️ 2026
 </footer>
-
-<!-- Logique Script Javascript réécrite -->
-<script>
-let total = 0;
-
-// 1. Ajouter un produit avec validation de sécurité renforcée
-function ajouter() {
-    let produit = document.getElementById("produit").value.trim();
-    let prix = parseFloat(document.getElementById("prix").value);
-    let qte = parseFloat(document.getElementById("qte").value);
-
-    // Blocage si vide, si négatif, ou égal à 0
-    if (produit === "" || isNaN(prix) || prix <= 0 || isNaN(qte) || qte <= 0) {
-        alert("Erreur : Veuillez entrer un produit valide et des valeurs supérieures à 0.");
-        return;
-    }
-
-    let somme = prix * qte;
-    total += somme;
-
-    // Insertion propre avec séparateurs de milliers (.toLocaleString())
-    document.getElementById("liste").innerHTML += `
-        <tr>
-            <td>${produit}</td>
-            <td>${prix.toLocaleString()}</td>
-            <td>${qte}</td>
-            <td>${somme.toLocaleString()}</td>
-        </tr>
-    `;
-
-    mettreAjourAffichage();
-
-    // Vider les champs et remettre le focus de saisie
-    document.getElementById("produit").value = "";
-    document.getElementById("prix").value = "";
-    document.getElementById("qte").value = "";
-    document.getElementById("produit").focus();
-}
-
-// 2. Annuler la vente en cours et remettre à zéro
-function annulerVente() {
-    if (confirm("Voulez-vous vraiment annuler la vente en cours ? Tout sera effacé.")) {
-        total = 0;
-        document.getElementById("liste").innerHTML = "";
-        mettreAjourAffichage();
-    }
-}
-
-// 3. Lancer l'impression propre de la facture
-function imprimerFacture() {
-    if (total === 0) {
-        alert("La facture est vide. Impossible de l'imprimer.");
-        return;
-    }
-    window.print();
-}
-
-// 4. Mettre à jour l'affichage des totaux sur l'écran
-function mettreAjourAffichage() {
-    document.getElementById("total").innerHTML = total.toLocaleString();
-    document.getElementById("venteJour").innerHTML = total.toLocaleString() + " FCFA";
-}
-</script>
-
-</body>
-</html>
